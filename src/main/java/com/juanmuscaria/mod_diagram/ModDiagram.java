@@ -14,7 +14,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Mod(modid = Tags.MODID, version = Tags.VERSION, name = Tags.MODNAME, acceptedMinecraftVersions = "[1.7.10]")
 public class ModDiagram {
@@ -32,10 +31,14 @@ public class ModDiagram {
 
   @EventHandler
   public void postInit(FMLPostInitializationEvent event) {
-    LOG.info("Generating mod mermaid diagram...");
+    LOG.info("Generating mod mermaid diagram and mod list...");
     var graph = new StringBuilder("```mermaid\nclassDiagram\n");
+    var list = new StringBuilder("# Mods ");
     var mods = new ArrayList<>(Loader.instance().getModList());
     mods.sort(Comparator.comparing(ModContainer::getModId));
+
+    list.append('(').append(mods.size()).append(")\n");
+
     for (ModContainer mod : mods) {
       // Skip forge mod containers
       if (shouldSkip(mod.getModId())) {
@@ -52,13 +55,23 @@ public class ModDiagram {
       }
 
       graph.append("\n");
+
+      list.append("* ").append(mod.getName()).append("-\\[").append(mod.getModId().replace("<","\\<")).append("]-")
+              .append(mod.getVersion()).append('\n');
     }
     graph.append("```");
     try {
-      Files.write(FileSystems.getDefault().getPath("./mods.md"),
+      Files.write(FileSystems.getDefault().getPath("./mod-diagram.md"),
               graph.toString().getBytes(StandardCharsets.UTF_8));
     } catch (IOException e) {
       LOG.error("Unable to write down mod diagram", e);
+    }
+
+    try {
+      Files.write(FileSystems.getDefault().getPath("./mod-list.md"),
+              list.toString().getBytes(StandardCharsets.UTF_8));
+    } catch (IOException e) {
+      LOG.error("Unable to write down mod list", e);
     }
   }
 
